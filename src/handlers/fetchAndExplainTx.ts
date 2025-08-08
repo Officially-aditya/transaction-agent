@@ -3,35 +3,31 @@ import { promptAIExplanation } from './promptAI';
 
 const MIRROR_NODE_URL = "https://testnet.mirrornode.hedera.com/api/v1";
 
-export async function fetchAndExplainTx(txId: string) {
-  const txUrl = `${MIRROR_NODE_URL}/transactions/${encodeURIComponent(txId)}`;
-  const txRes = await fetch(txUrl);
-  const txData = await txRes.json();
-  const tx = txData.transactions?.[0];
-  if (!tx) {
-    throw new Error('Transaction not found');
+export async function fetchAndExplainTx(contractId: string) {
+  if (!/^\d+\.\d+\.\d+$/.test(contractId)) {
+    throw new Error('Invalid contract ID format. Expected something like 0.0.12345');
   }
 
-  const hashBase64 = tx.transaction_hash;
-  const hashHex = Buffer.from(hashBase64, 'base64').toString('hex');
-  const resultUrl = `${MIRROR_NODE_URL}/contracts/results/${hashHex}`;
+  console.log(`Fetching latest execution for contractId: ${contractId}`);
 
-  const resultRes = await fetch(resultUrl);
-  const result = await resultRes.json();
+  const res = await fetch(
+    `${MIRROR_NODE_URL}/contracts/${encodeURIComponent(contractId)}/results?order=desc&limit=1`
+  );
+  const data = await res.json();
 
-  const input = result.function_parameters || 'N/A';
-  const errorMessage = result.error_message || 'None';
-  const status = result.result || tx.result;
-  const gasUsed = result.gas_used;
-  const contractId = result.contract_id || 'Unknown';
+  if (!data.results || data.results.length === 0) {
+    throw new Error('No recent contract executions found for this contractId');
+  }
+
+  const latest = data.results[0];
 
   const explanation = await promptAIExplanation({
-    txId,
-    input,
-    errorMessage,
-    status,
-    gasUsed,
-    contractId,
+    txId: latest.transaction_id || 'Unknown',
+    input: latest.function_parameters || 'N/A',
+    errorMessage: latest.error_message || 'None',
+    status: latest.result || 'Unknown',
+    gasUsed: latest.gas_used || 0,
+    contractId: latest.contract_id || contractId,
   });
 
   return {

@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { fetchAndExplainTx } from './handlers/fetchAndExplainTx';
+import * as dotenv from "dotenv";
+dotenv.config();
 
 export function activate(context: vscode.ExtensionContext) {
   let disposable = vscode.commands.registerCommand('tx-detective.explain', async () => {

@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenerativeAI("inset api key here");
 
 interface TxInfo {
   txId: string;
@@ -13,7 +13,7 @@ interface TxInfo {
 
 export async function promptAIExplanation(info: TxInfo) {
   const prompt =
-    `Explain what happened in this Hedera smart contract transaction in simple terms:\n\n` +
+    `Explain what happened in this Hedera smart contract transaction under 100 words Only mention what was attempted, success/failure, and reason:\n\n` +
     `Transaction ID: ${info.txId}\n` +
     `Contract: ${info.contractId}\n` +
     `Status: ${info.status}\n` +
