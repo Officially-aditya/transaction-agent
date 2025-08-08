@@ -1,8 +1,6 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 interface TxInfo {
   txId: string;
@@ -14,27 +12,26 @@ interface TxInfo {
 }
 
 export async function promptAIExplanation(info: TxInfo) {
-  const prompt = `Explain what happened in this Hedera smart contract transaction in simple terms:\n\n`
-    + `Transaction ID: ${info.txId}\n`
-    + `Contract: ${info.contractId}\n`
-    + `Status: ${info.status}\n`
-    + `Gas Used: ${info.gasUsed}\n`
-    + `Function Input: ${info.input}\n`
-    + `Error (if any): ${info.errorMessage}\n`;
+  const prompt =
+    `Explain what happened in this Hedera smart contract transaction in simple terms:\n\n` +
+    `Transaction ID: ${info.txId}\n` +
+    `Contract: ${info.contractId}\n` +
+    `Status: ${info.status}\n` +
+    `Gas Used: ${info.gasUsed}\n` +
+    `Function Input: ${info.input}\n` +
+    `Error (if any): ${info.errorMessage}\n`;
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4',
-    messages: [
-      { role: 'system', content: 'You are a Hedera smart contract transaction debugger.' },
-      { role: 'user', content: prompt }
-    ]
+  // Choose a Gemini model (gemini-1.5-pro is best for reasoning)
+  const model = genAI.getGenerativeModel({ model: 'gemma-3n-e2b-it' });
+
+  const result = await model.generateContent({
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
   });
 
-  const summary = response.choices[0].message?.content || 'No response from AI';
+  const summary = result.response.text() || "No response from AI";
 
   return {
-    summary: summary.split('\n')[0],
+    summary: summary.split("\n")[0], // first line
     fullText: summary,
   };
-  
 }
